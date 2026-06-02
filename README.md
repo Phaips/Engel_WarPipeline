@@ -1,4 +1,4 @@
-# Batch Submission of `pytom-match-pick` from Warp Output
+# Batch Submission of `pytom-match-pick` from WarpM
 
 This script automates batch submission of [pytom-match-pick](https://github.com/SBC-Utrecht/pytom-match-pick) jobs on an HPC cluster (SLURM) by reading metadata directly from **[Warp](https://github.com/warpem/warp)** tilt-series XMLs. It:
 
