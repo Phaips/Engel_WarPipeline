@@ -121,23 +121,32 @@ def belongs_to_other(stem: str, prefix: str, prefixes) -> bool:
 
 
 def find_tomogram(recon: Path, prefix: str, prefixes) -> Path:
-    exact = recon / f"{prefix}.mrc"
-    if exact.is_file():
-        return exact
-
-    vol = recon / f"{prefix}_Vol.mrc"
-    if vol.is_file():
-        return vol
-
+    candidates = sorted(recon.glob(f"{prefix}*.mrc"))
     hits = []
-    for p in sorted(recon.glob(f"{prefix}_*.mrc")):
-        suffix = p.stem[len(prefix) + 1:]
-        first_token = suffix.split("_", 1)[0]
 
-        if first_token.isdigit():
-            continue
+    for p in candidates:
+        stem = p.stem
 
-        hits.append(p)
+        # Plain exact tomogram: Position_15.mrc
+        norm = stem
+
+        # Warp reconstruction: Position_15_9.68Apx.mrc, Position_15_1.5Apx.mrc, etc.
+        if norm.endswith("Apx"):
+            parts = norm.rsplit("_", 1)
+            if len(parts) == 2 and parts[1].endswith("Apx"):
+                value = parts[1][:-3]
+                try:
+                    float(value)
+                    norm = parts[0]
+                except ValueError:
+                    pass
+
+        # Alternative convention: Position_15_Vol.mrc
+        if norm.endswith("_Vol"):
+            norm = norm[:-4]
+
+        if norm == prefix:
+            hits.append(p)
 
     if not hits:
         raise FileNotFoundError(f"Could not find tomogram for {prefix} in {recon}")
