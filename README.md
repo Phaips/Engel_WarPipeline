@@ -1,3 +1,62 @@
+# Engel Warp Pipeline
+
+A compact workflow connecting [Warp/M and WarpTools](https://github.com/warpem/warp), [Miss-Alignment](https://github.com/warpem/miss-alignment), [PyTom Match Pick](https://github.com/SBC-Utrecht/pytom-match-pick), and [IsoNet2](https://github.com/IsoNet-cryoET/IsoNet).
+
+## Pipeline overview
+
+1. **`submit_warp.sh`** processes raw tilt-series data in Warp/M, performs initial IMOD or AreTomo alignment, runs Miss-Alignment, and reconstructs the final tomograms in `warp_tiltseries_<RUN_NAME>/reconstruction_miss/`.
+2. **`warp2pytom.py`** generates and submits PyTom Match Pick jobs from the Warp XML metadata. The Warp script also creates `reconstruction -> reconstruction_miss`, so the existing `warp2pytom.py` reconstruction lookup works unchanged.
+3. **`submit_export_particles.sh`** merges PyTom particle STAR files, normalizes their tomogram identifiers for WarpTools, exports particles, and merges the resulting metadata across datasets.
+4. **`submit_isonet2.sh`** trains and applies IsoNet2 using the post-Miss-Alignment odd/even half tomograms, tilt limits, Warp XML defocus values, and user-supplied masks.
+
+## `submit_warp.sh`: Warp/M and Miss-Alignment
+
+Edit the user-settings block and submit with:
+
+```bash
+sbatch submit_warp.sh
+```
+
+The script runs frame motion/CTF estimation, tilt-series import and alignment, tilt-series CTF estimation, a QC reconstruction, Miss-Alignment, and a final post-Miss-Alignment reconstruction. Existing reconstruction folders are moved to timestamped backups rather than deleted.
+
+Main outputs:
+
+```text
+warp_tiltseries_<RUN_NAME>/
+├── reconstruction_etomo/ or reconstruction_aretomo/
+├── reconstruction_miss/
+│   ├── odd/
+│   └── even/
+└── reconstruction -> reconstruction_miss
+```
+
+## `submit_export_particles.sh`: Warp particle export
+
+Set one entry per dataset in `DATASET_TAGS`, `PYTOM_DIRS`, and `WARP_SETTINGS`. Each PyTom directory is expected to contain particle STAR files under `<PYTOM_DIR>/*/*.star`, as produced after candidate extraction from the default `warp2pytom.py` submission structure.
+
+- `EXPORT_DIM="2d"` exports per-tilt particle series and writes merged RELION `--tomo` particle, tomogram, and optimisation-set STAR files.
+- `EXPORT_DIM="3d"` exports subtomograms and writes one merged conventional RELION particle STAR file.
+
+The input STAR files must contain `rlnCoordinateX/Y/Z`, `rlnMicrographName`, and the PyTom angle/score columns retained by the script. `COORDS_ANGPIX` is the coordinate pixel size; `OUTPUT_ANGPIX` is the requested particle pixel size; `DIAMETER_ANGSTROM` is in Å.
+
+```bash
+sbatch submit_export_particles.sh
+```
+
+The merge step requires Python with `pandas` and `starfile`, normally available in the PyTom Match Pick environment.
+
+## `submit_isonet2.sh`: IsoNet2 denoising
+
+Edit the paths to the Warp tilt-series folder, corresponding tomostar folder, and mask folder, then submit:
+
+```bash
+sbatch submit_isonet2.sh
+```
+
+The script reads odd/even half tomograms from `reconstruction_miss/`, determines the dataset-wide tilt range from the available `.tlt` files, reads the global defocus from each Warp XML and converts it from µm to Å, then runs IsoNet2 `prepare_star`, `refine`, and `predict`. Masks should be named `<prefix>.mrc` or `<prefix>_Vol_bmask.mrc`. Each run uses a new output directory and does not delete existing data.
+
+---
+
 # Batch Submission of `pytom-match-pick` from WarpM
 
 This script automates batch submission of [pytom-match-pick](https://github.com/SBC-Utrecht/pytom-match-pick) jobs on an HPC cluster (SLURM) by reading metadata directly from **[Warp](https://github.com/warpem/warp)** tilt-series XMLs. It:
