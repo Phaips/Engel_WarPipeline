@@ -9,7 +9,7 @@ A compact workflow connecting [Warp/M](https://github.com/warpem/warp), [Miss-Al
 | Step | Script | Description |
 |:---:|---|---|
 | 1 | `submit_warp.sh` | Processes raw tilt-series data in Warp, performs initial IMOD or AreTomo alignment, runs Miss-Alignment, and reconstructs the final tomograms in `warp_tiltseries_<RUN_NAME>/reconstruction_miss/` |
-| 2 | `warp2pytom.py` | Generates and submits pytom-match-pick jobs from the Warp XML metadata in batch |
+| 2 | `warp2pytom.py` | Generates and submits pytom-match-pick jobs from the Warp XML metadata in batch for all tomos |
 | 3 | `submit_export_particles.sh` | Merges pytom particle STAR files, normalizes their tomogram identifiers for WarpTools, exports particles, and merges the resulting metadata across datasets for [RELION5](https://github.com/3dem/relion/tree/ver5.0) |
 | 4 | `submit_isonet2.sh` | Trains and applies IsoNet2 using the post-Miss-Alignment odd/even half tomograms, tilt angles, Warp XML defocus values, and user-supplied masks |
 
