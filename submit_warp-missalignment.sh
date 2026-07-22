@@ -15,6 +15,7 @@
 #SBATCH --mail-type=none
 
 set -eo pipefail
+shopt -s nullglob
 
 # =============================================================================
 # USER SETTINGS
