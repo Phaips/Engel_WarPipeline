@@ -14,8 +14,7 @@
 #SBATCH --qos=emgpu
 #SBATCH --mail-type=none
 
-set -Eeuo pipefail
-shopt -s nullglob
+set -eo pipefail
 
 # =============================================================================
 # USER SETTINGS
